@@ -12,7 +12,7 @@ using std::vector;
 #include "poly_arithmetic.cuh"
 
 #include <time.h>
-#include "my_time.h"
+#include <sys/time.h> 
 
 #define check 0
 
@@ -53,27 +53,28 @@ int main()
     uint128_t mu1 = uint128_t::exp2(bit_length * 2);
     unsigned long long mu = (mu1 / q).low;
     
-    // clock_t start,stop;
-  	// start = clock();
-    MyTimer timer;
-    MyTimer timer2;
-    long ntt_time = 0,intt_time = 0, trans_in_time = 0, trans_out_time = 0;
-    timer2.Start();
-    for(int j = 0; j < 1; ++j)
+    clock_t start,stop;
+  	start = clock();
+    // MyTimer timer;
+    // MyTimer timer2;
+    // long ntt_time = 0,intt_time = 0, trans_in_time = 0, trans_out_time = 0;
+    // timer2.Start();
+    unsigned long long* a;
+    cudaMallocHost(&a, sizeof(unsigned long long) * N);
+    // randomArray128(a, N, q);
+    unsigned long long* b;  
+    cudaMallocHost(&b, sizeof(unsigned long long) * N);
+    for(int j = 0; j < 100000; ++j)
     {
         // timer.Start();
-        unsigned long long* a;
-        cudaMallocHost(&a, sizeof(unsigned long long) * N);
-        randomArray128(a, N, q);
-        unsigned long long* b;  
-        cudaMallocHost(&b, sizeof(unsigned long long) * N);
-        randomArray128(b, N, q);
-        // for (size_t i = 0; i < N; i++)
-        // {
-        //     a[i] = i;
-        //     b[i] = 0;
-        // }
-        // b[0] = 1;
+        
+        // randomArray128(b, N, q);
+        for (size_t i = 0; i < N; i++)
+        {
+            a[i] = i;
+            b[i] = 0;
+        }
+        b[0] = 1;
         unsigned long long* d_a;
         cudaMalloc(&d_a, size_array);
         unsigned long long* d_b;
@@ -89,14 +90,14 @@ int main()
         // trans_in_time += timer.costTime;
         // timer.Reset();
 
-        timer.Start();
+        // timer.Start();
         // forwardNTTdouble(d_a, d_b, N, ntt1, ntt2, q, mu, bit_length, psi_powers);
         forwardNTT(d_a, N, ntt1, q, mu, bit_length, psi_powers);
         cudaDeviceSynchronize();
-        timer.End();
+        // timer.End();
         // std::cout << "NTT-time:" << timer.costTime << "us" << std::endl;
-        ntt_time += timer.costTime;
-        timer.Reset();
+        // ntt_time += timer.costTime;
+        // timer.Reset();
         forwardNTT(d_b, N, ntt1, q, mu, bit_length, psi_powers);
         
         barrett << <N / 256, 256 >> > (d_a, d_b, q, mu, bit_length);
@@ -118,24 +119,25 @@ int main()
 
         cudaStreamDestroy(ntt1); 
         // cudaStreamDestroy(ntt2);
-        timer2.End();
-        for (size_t i = 0; i < N; i++)
-        {
-            cout << a[i] << " " ;
-        }
+        // timer2.End();
+        // for (size_t i = 0; i < N; i++)
+        // {
+        //     cout << a[i] << " " ;
+        // }
+        // cout << endl;
         // cudaFreeHost(a); 
         // cudaFreeHost(b);
     }
     // timer2.End();
     // std::cout << "trans_in-time:" <<trans_in_time/10000 << "us" << std::endl;
     // std::cout << "trans_out-time:" << trans_out_time/10000 << "us" << std::endl;
-    std::cout << "NTT-time:" << ntt_time/1 << "us" << std::endl;
+    // std::cout << "NTT-time:" << ntt_time/1 << "us" << std::endl;
     // std::cout << "INTT-time:" << intt_time/1 << "us" << std::endl;
-    std::cout << "all-time:" << timer2.costTime/1 << "us" << std::endl;
+    // std::cout << "all-time:" << timer2.costTime/1 << "us" << std::endl;
     
-	// stop = clock();
-  	// double endtime=(double)(stop-start)/CLOCKS_PER_SEC; 
- 	// std::cout << "time: "<< endtime << "s" <<std::endl;
+	stop = clock();
+  	double endtime=(double)(stop-start)/CLOCKS_PER_SEC; 
+ 	std::cout << "time: "<< endtime << "s" <<std::endl;
 
     // unsigned long long* a;
     // cudaMallocHost(&a, sizeof(unsigned long long) * N);
